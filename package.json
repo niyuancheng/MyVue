@@ -1,0 +1,17 @@
+{
+  "name": "vue2_shouxie",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "rollup -cw"
+  },
+  "author": "niyuancheng",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/core": "^7.19.1",
+    "@babel/preset-env": "^7.19.1",
+    "rollup": "^2.79.0",
+    "rollup-plugin-babel": "^4.4.0"
+  }
+}
