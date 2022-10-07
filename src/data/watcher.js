@@ -14,20 +14,24 @@ function popTarget() {
 }
 
 class Watcher {
-    constructor(vm, fn, options) {
+    constructor(vm, fn, options,cb) {
+        this.vm = vm;
         this.id = id++;
         this.getter = fn; //fn很大概率为渲染视图的函数
         this.deps = []; //deps数组中存储着该观察者订阅了多少了变量对象
-        if (options && options.lazy) {
+        this.cb = cb;
+        if(options) {
             this.lazy = options.lazy || false;
             this.dirty = this.lazy;
+            this.user = options.user;
         }
-        if(!this.dirty) this.get(vm);
+        
+        if(!this.dirty) this.value = this.get();
     }
 
-    evaluate(vm) {
+    evaluate() {
         this.dirty = false;
-        return this.get(vm);
+        return this.get();
     }
 
     depend() {
@@ -36,19 +40,26 @@ class Watcher {
         })
     }
 
-    get(vm) {
+    get() {
         pushTarget(this);
-        let value = this.getter.call(vm);
+        let value = this.getter.call(this.vm);
         popTarget();
         return value;
     }
 
     update() { //当watcher依赖的属性发生变化的时候执行watcher中的update方法
-        if(this.lazy) {
-            this.dirty = true;
+        if(this.user) { 
+            let oldVal = this.value;
+            let newVal = this.get();
+            this.cb.call(this.vm,newVal,oldVal);
         } else {
-            queueWatcher(this);
+            if(this.lazy) {
+                this.dirty = true;
+            } else {
+                queueWatcher(this);
+            }
         }
+        
         
     }
 

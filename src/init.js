@@ -35,6 +35,12 @@ export function initMixin(Vue) {
     }
 
     Vue.prototype.$nextTick = nextTick;
+
+    Vue.prototype.$watch = function(expr,cb) {
+        let fn = () => this[expr];
+
+        new Watcher(this,fn,{user:true},cb)
+    }
 }
 
 function initData(vm) {
@@ -59,8 +65,8 @@ function getComputedProperty(context, key) {
     return function () {
         let watcher = context._computedWatchers[key]
         if (watcher.dirty) {
-            watcher.value = watcher.evaluate(context);
-            if(Dep.target) {
+            watcher.value = watcher.evaluate();
+            if (Dep.target) {
                 watcher.depend();
             }
         }
@@ -90,6 +96,19 @@ function initComputed(vm) {
     }
 }
 
+function initWatch(vm) {
+    let watches = vm.$options.watch;
+    for (let key in watches) {
+        let watch = watches[key];
+        let handler = typeof watch === 'function' ? watch : watch.handler;
+        let propName = typeof watch === 'function' ? getFuncName(watch) : key;
+        console.log(propName,handler);
+
+        vm.$watch(propName,handler);
+    }
+
+}
+
 function initState(vm) {
     let opts = vm.$options;
     if (opts.data) {
@@ -97,6 +116,9 @@ function initState(vm) {
     }
     if (opts.computed) {
         initComputed(vm); //初始化计算属性
+    }
+    if (opts.watch) {
+        initWatch(vm);
     }
 }
 
