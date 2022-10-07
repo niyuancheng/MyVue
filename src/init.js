@@ -39,7 +39,7 @@ export function initMixin(Vue) {
     Vue.prototype.$watch = function(expr,cb) {
         let fn = () => this[expr];
 
-        new Watcher(this,fn,{user:true},cb)
+        return new Watcher(this,fn,{user:true},cb)
     }
 }
 
