@@ -1,7 +1,7 @@
 //此模块用于实现数据的响应式    
 
 import arrMethods from "./array";
-import Dep from "./Dep";
+import Dep from "./dep";
 
 function observe(obj) { //observe函数的中作用就是为了将obj对象中的属性都变为访问器属性
     let ob;

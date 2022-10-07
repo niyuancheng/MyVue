@@ -6,7 +6,6 @@ function appendAttrs(vnode) {
             for(let item in vnode.props.style) {
                 res += `${item}:${vnode.props.style[item]};`;
             }
-            console.log(res);
             vnode.el.setAttribute("style",res);
         } else {
             vnode.el.setAttribute(key,vnode.props[key]);

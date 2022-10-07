@@ -14,7 +14,6 @@ function genText(text) { //用于生成mustache类型的模板字符串
             lastIndex = textRegExp.lastIndex;
         }
         tokens.push(`${JSON.stringify(text.slice(lastIndex))}`);
-        console.log(tokens);
         return `_v(${tokens.join("+")})`
     } else {
         return `_v(${JSON.stringify(text)})`

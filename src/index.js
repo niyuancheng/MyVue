@@ -11,7 +11,7 @@ Vue.options = {};//全局的公共配置选项
 initLifeCycle(Vue);
 initMixin(Vue);
 
-Vue.mixin = function(options) {
+Vue.mixin = function(options) { //给Vue构造函数上添加全局的api函数
     Vue.options = mergeOptions(Vue.options,options)
 }
 

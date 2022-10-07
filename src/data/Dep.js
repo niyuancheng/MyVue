@@ -6,17 +6,17 @@ class Dep {
         this.subs = []; //存储着dep的监听者也就是观察者，当Dep实例对应的属性发生改变时，对应subs中存储的观察者就会触发调用
     }
 
-    depend() {
-        if(!this.subs.includes(Dep.target)) {
+    depend() { //get时添加依赖
+        if (!this.subs.includes(Dep.target)) {
             this.subs.push(Dep.target);
-            if(!Dep.target.deps.includes(this)){
+            if (!Dep.target.deps.includes(this)) {
                 Dep.target.deps.push(this);
             }
         }
     }
 
-    notify() {
-        this.subs.forEach(watcher=>{
+    notify() { //set时触发依赖
+        this.subs.forEach(watcher => {
             watcher.update();
         })
     }
