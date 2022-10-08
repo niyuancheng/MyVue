@@ -36,10 +36,10 @@ export function initMixin(Vue) {
 
     Vue.prototype.$nextTick = nextTick;
 
-    Vue.prototype.$watch = function(expr,cb) {
+    Vue.prototype.$watch = function (expr, cb) {
         let fn = () => this[expr];
 
-        return new Watcher(this,fn,{user:true},cb)
+        return new Watcher(this, fn, { user: true }, cb)
     }
 }
 
@@ -85,7 +85,7 @@ function defineComputedProperty(vm, key, computed) {
     });
 }
 
-function initComputed(vm) {
+function initComputed(vm) { //初始化计算属性
     let computeds = vm.$options.computed;
     let watchers = vm._computedWatchers = {};
     for (let key in computeds) {
@@ -96,15 +96,15 @@ function initComputed(vm) {
     }
 }
 
-function initWatch(vm) {
+function initWatch(vm) { //初始化监视属性
     let watches = vm.$options.watch;
     for (let key in watches) {
         let watch = watches[key];
         let handler = typeof watch === 'function' ? watch : watch.handler;
         let propName = typeof watch === 'function' ? getFuncName(watch) : key;
-        console.log(propName,handler);
+        console.log(propName, handler);
 
-        vm.$watch(propName,handler);
+        vm.$watch(propName, handler);
     }
 
 }
@@ -130,13 +130,12 @@ function initTemplate(vm) {
 
 function mountComponent(el, vm) {
     let updateComponet = () => { //模板的重新编译或者初次编译
-        let dom = document.querySelector(el);
-        // if(Vue._vnode) {
-        //     dom = Vue._vnode; 
-        // } else {
-        //     dom = document.querySelector(el);
-        // }
-        console.log("视图开始渲染")
+        let dom;
+        if (Vue._vnode) {
+            dom = Vue._vnode;
+        } else {
+            dom = document.querySelector(el);
+        }
         vm._update(dom);
     }
     let watcher = new Watcher(vm, updateComponet); //watcher观察者，通常一个Vue实例或者一个Vue组件对应一个Watcher实例，也就是观察者对象

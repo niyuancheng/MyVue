@@ -19,7 +19,7 @@ class Watcher {
         this.id = id++;
         this.getter = fn; //fn很大概率为渲染视图的函数
         this.deps = []; //deps数组中存储着该观察者订阅了多少了变量对象
-        this.cb = cb;
+        this.cb = cb || (()=>{});
         if(options) {
             this.lazy = options.lazy || false;
             this.dirty = this.lazy;
