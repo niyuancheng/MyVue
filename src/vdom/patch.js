@@ -1,11 +1,9 @@
 function appendAttrs(vnode) {
     for (let key in vnode.props) {
         if (key === 'style') {
-            let res = ``
             for (let item in vnode.props.style) {
-                res += `${item}:${vnode.props.style[item]};`;
+                vnode.el.style[item] = vnode.props.style[item];
             }
-            vnode.el.setAttribute("style", res);
         } else {
             vnode.el.setAttribute(key, vnode.props[key]);
         }
@@ -27,7 +25,7 @@ function createElement(vnode) { //根据虚拟节点vnode创建对应的真实DO
 
 }
 
-export function patch(oldVNode, newVNode) {
+export function patch(oldVNode, newVNode,vm) {
     if (oldVNode.nodeType === 1) { //如果是真实的DOM元素的话则进行初次渲染
         let dom = createElement(newVNode);
         oldVNode.parentNode.insertBefore(dom, oldVNode.nextSibling);
@@ -42,5 +40,7 @@ export function patch(oldVNode, newVNode) {
         console.log("开始进行diff算法");
     }
 
-    Vue._vnode = newVNode;
+    oldVNode.el = newVNode.el;
+    vm._vnode = newVNode;
+    vm._dom = oldVNode.el;
 }

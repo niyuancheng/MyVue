@@ -26,6 +26,6 @@ export function initLifeCycle(Vue) {
     Vue.prototype._update = function(el) { //将虚拟DOM转变为真实DOM并且挂载到DOM树上
         let vm = this;
         let vdom = vm._render();
-        patch(el,vdom);
+        patch(el,vdom,vm);
     }
 }
