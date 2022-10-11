@@ -10,7 +10,7 @@ import Dep from "./data/dep";
 export function initMixin(Vue) {
     Vue.prototype._init = function (options) {
         let vm = this;
-        vm.$options = mergeOptions(Vue.options, options);
+        vm.$options = mergeOptions(Vue, options); //合并实例化传入的局部options选项和全局Vue上的options选项
         callHooks(vm, 'beforeCreate')
         initState(vm); //对options中的所有配置选项进行初始化，包括data.props,method,watch,computed,direactives等
         callHooks(vm, 'created');
@@ -135,6 +135,7 @@ function mountComponent(el, vm) {
         } else {
             dom = document.querySelector(el);
         }
+        console.log(vm)
         vm._update(dom);
     }
     let watcher = new Watcher(vm, updateComponet); //watcher观察者，通常一个Vue实例或者一个Vue组件对应一个Watcher实例，也就是观察者对象

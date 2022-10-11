@@ -1,10 +1,14 @@
-import { createElementVNode, createTextVNode } from "./vdom/index" //创建不同类型的虚拟节点
+import isNativeTag from "./utils/isNativeTag";
+import { createComponentVNode, createElementVNode, createTextVNode } from "./vdom/index" //创建不同类型的虚拟节点
 import { patch } from "./vdom/patch";
 
 
 export function initLifeCycle(Vue) {
     Vue.prototype._c = function(tag,props,children) { //创建元素节点
-        return createElementVNode(this,...arguments);
+        if(isNativeTag(tag)) {
+            return createElementVNode(this,...arguments);
+        }
+        return createComponentVNode(this,...arguments);
     }
 
     Vue.prototype._s = function(val) { 

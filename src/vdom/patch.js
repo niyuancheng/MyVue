@@ -11,15 +11,28 @@ function appendAttrs(vnode) {
         }
     }
 }
-export function createElement(vnode) { //根据虚拟节点vnode创建对应的真实DOM元素
+export function createElement(vnode,vm) { //根据虚拟节点vnode创建对应的真实DOM元素
     if (vnode.tag) {
-        vnode.el = document.createElement(vnode.tag);
-        appendAttrs(vnode);
-        if (vnode.children) {
-            vnode.children.forEach(child => {
-                vnode.el.appendChild(createElement(child));
-            })
+        if (vnode.type === 'tag') {
+            vnode.el = document.createElement(vnode.tag);
+            appendAttrs(vnode);
+            if (vnode.children) {
+                vnode.children.forEach(child => {
+                    vnode.el.appendChild(createElement(child,vm));
+                })
+            }
+        } else if(vnode.type === 'component') {
+            let com = new vm.$options.components[vnode.tag]();
+            
+            let container = document.createElement("div");
+            container.id = "container";
+            document.body.appendChild(container);
+
+            com.$mount("#container");
+
+            return com._vnode.el;
         }
+
     } else {
         vnode.el = document.createTextNode(vnode.text);
     }
@@ -33,7 +46,7 @@ export function isSame(vnode1, vnode2) { //判断是否为同一虚拟节点
 
 export function patch(oldVNode, newVNode, vm) {
     if (oldVNode.nodeType === 1) { //如果是真实的DOM元素的话则进行初次渲染
-        let dom = createElement(newVNode);
+        let dom = createElement(newVNode,vm);
         oldVNode.parentNode.insertBefore(dom, oldVNode.nextSibling);
         oldVNode.parentNode.removeChild(oldVNode);
         oldVNode.el = dom;

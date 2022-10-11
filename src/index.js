@@ -1,4 +1,3 @@
-import mergeOptions from "./mergeOptions";
 import { initMixin } from "./initMixin";
 import { initLifeCycle } from "./initLifecycle";
 import { initGlobal } from "./initGlobal";
