@@ -39,7 +39,7 @@ function genChildren(children) { //生成子节点对应的字符串
 function genProps(attrs) {
     let res = `{`;
     res += attrs.map(attr => {
-        if (attr.key !== "style") { //如果该属性值不为style的话
+        if (attr.key !== "style" && attr.key!=="v-bind:style") { //如果该属性值不为style的话
             return `${attr.key}:${JSON.stringify(attr.value)}`;
         } else {
             let str = ``;

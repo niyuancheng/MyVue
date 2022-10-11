@@ -75,8 +75,6 @@ export function updateChildren(parentNode, oldCh, newCh) {
             if (oldCh[i].dom) {
                 parentNode.removeChild(oldCh[i].dom);
             }
-
         }
     }
-
 }

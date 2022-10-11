@@ -8,6 +8,9 @@
     'beforeCreate', 'created', 'beforeMount', 'mounted', 'beforeUpdate', 'updated', 'beforeDestory', 'destoryed'];
     var strategy = {}; //策略数组
 
+    strategy['components'] = function (p, c) {
+    };
+
     LIFECYCLE.forEach(function (hook) {
       //对于所有的生命周期钩子其具体的更新策略
       strategy[hook] = function (p, c) {
@@ -553,7 +556,7 @@
     function genProps(attrs) {
       var res = "{";
       res += attrs.map(function (attr) {
-        if (attr.key !== "style") {
+        if (attr.key !== "style" && attr.key !== "v-bind:style") {
           //如果该属性值不为style的话
           return "".concat(attr.key, ":").concat(JSON.stringify(attr.value));
         } else {
@@ -695,6 +698,7 @@
     }
 
     function callHooks(vm, hooks) {
+      //触发特定的生命周期钩子函数
       if (vm.$options[hooks]) {
         vm.$options[hooks].forEach(function (hook) {
           hook.call(vm);
@@ -759,23 +763,23 @@
     }
 
     function initData(vm) {
-      observe(vm.$options.data);
-      var opts = vm.$options;
-      vm._data = opts.data; //数据劫持
+      var data = typeof vm.$options.data === 'function' ? vm.$options.data() : vm.$options.data;
+      observe(data);
+      vm._data = data; //数据劫持
 
       var _loop = function _loop(key) {
         //直接将data中的属性绑定到vm实例上，进行了一次数据代理
         Object.defineProperty(vm, key, {
           get: function get() {
-            return opts.data[key];
+            return data[key];
           },
           set: function set(val) {
-            opts.data[key] = val;
+            data[key] = val;
           }
         });
       };
 
-      for (var key in opts.data) {
+      for (var key in data) {
         _loop(key);
       }
     }
@@ -813,7 +817,6 @@
 
       for (var key in computeds) {
         var getter = typeof computeds[key] === 'function' ? computeds[key] : computeds[key].get;
-        console.log(getter);
         watchers[key] = new Watcher(vm, getter, {
           lazy: true
         });
@@ -829,7 +832,6 @@
         var watch = watches[key];
         var handler = typeof watch === 'function' ? watch : watch.handler;
         var propName = typeof watch === 'function' ? getFunctionName(watch) : key;
-        console.log(propName, handler);
         vm.$watch(propName, handler);
       }
     }
@@ -1152,7 +1154,34 @@
 
         var vdom = vm._render();
 
+        console.log(vdom);
         patch(el, vdom, vm);
+      };
+    }
+
+    function initGlobal(Vue) {
+      Vue.mixin = function (options) {
+        //给Vue构造函数上添加全局的api函数
+        Vue.options = mergeOptions(Vue.options, options);
+      };
+
+      Vue.extend = function (options) {
+        //该静态方法用于生成组件的实例对象
+        function Sub() {
+          //Sub是Vue的子类
+          this._init(options);
+        }
+
+        Sub.prototype = Object.create(Vue.prototype);
+        Sub.prototype.constructor = Sub;
+        Sub.extendOptions = options;
+        return Sub;
+      };
+
+      Vue.component = function (name, component) {
+        //申明一个全局组件
+        component = typeof component === 'function' ? component : Vue.extend(component);
+        Vue.options.components[name] = component;
       };
     }
 
@@ -1162,15 +1191,12 @@
     }
 
     Vue.options = {}; //全局的公共配置选项
-    //init...方法是向vue实例的原型对象上添加方法
+
+    Vue.options.components = {}; //init...方法是向vue实例的原型对象上添加方法
 
     initLifeCycle(Vue);
     initMixin(Vue);
-
-    Vue.mixin = function (options) {
-      //给Vue构造函数上添加全局的api函数
-      Vue.options = mergeOptions(Vue.options, options);
-    };
+    initGlobal(Vue);
 
     return Vue;
 

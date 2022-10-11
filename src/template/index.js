@@ -5,6 +5,7 @@ import { parseHTML } from "./parse"
 export default function compileToFunction(html) {
     //1.生成AST抽象语法树
     let ast = parseHTML(html);
+
     //2.根据抽象语法树生成JS字符串
     let code = genCode(ast.children[0]);
 

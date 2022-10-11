@@ -11,6 +11,12 @@ let LIFECYCLE = [ //存放Vue实例的生命周期数组
 
 let strategy = {} //策略数组
 
+strategy['components'] = function(p,c) {
+    if(p && c) {   
+        
+    }
+}
+
 LIFECYCLE.forEach(hook=>{ //对于所有的生命周期钩子其具体的更新策略
     strategy[hook] = function(p,c) {
         if(p) {

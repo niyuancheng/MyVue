@@ -1,6 +1,6 @@
 import observe from "./data/index";
 import Watcher from "./data/watcher";
-import mergeOptions from "./globalAPI";
+import mergeOptions from "./mergeOptions";
 import { nextTick } from "./nextTick";
 import compileToFunction from "./template/index.js";
 import { callHooks } from './hooks'
@@ -44,17 +44,17 @@ export function initMixin(Vue) {
 }
 
 function initData(vm) {
-    observe(vm.$options.data);
-    let opts = vm.$options;
-    vm._data = opts.data; //数据劫持
-    for (let key in opts.data) {
+    let data = typeof vm.$options.data === 'function' ? vm.$options.data() : vm.$options.data
+    observe(data);
+    vm._data = data; //数据劫持
+    for (let key in data) {
         //直接将data中的属性绑定到vm实例上，进行了一次数据代理
         Object.defineProperty(vm, key, {
             get() {
-                return opts.data[key];
+                return data[key];
             },
             set(val) {
-                opts.data[key] = val;
+                data[key] = val;
             }
         })
     }
@@ -90,7 +90,6 @@ function initComputed(vm) { //初始化计算属性
     let watchers = vm._computedWatchers = {};
     for (let key in computeds) {
         let getter = typeof computeds[key] === 'function' ? computeds[key] : computeds[key].get;
-        console.log(getter)
         watchers[key] = new Watcher(vm, getter, { lazy: true });
         defineComputedProperty(vm, key, computeds[key]);
     }
@@ -102,7 +101,6 @@ function initWatch(vm) { //初始化监视属性
         let watch = watches[key];
         let handler = typeof watch === 'function' ? watch : watch.handler;
         let propName = typeof watch === 'function' ? getFuncName(watch) : key;
-        console.log(propName, handler);
 
         vm.$watch(propName, handler);
     }
