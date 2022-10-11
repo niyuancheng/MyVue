@@ -58,7 +58,6 @@ function defineReactive(obj,key,data) {
     observe(obj[key]); //先将obj[key]对应的属性值也变成响应式的
     Object.defineProperty(obj,key,{
         get() { //get时收集依赖
-            console.log(`触发了属性${key}的get方法`)
             if(Dep.target) {
                 dep.depend();
                 if(Array.isArray(data)) {
@@ -69,7 +68,6 @@ function defineReactive(obj,key,data) {
         },
         set(newVal) { //set时触发依赖
             if(newVal !== data) {
-                console.log(`属性值${key}发生了变化`)
                 observe(newVal); //先将传入的newVal也变成访问器属性
                 data = newVal;
                 dep.notify();

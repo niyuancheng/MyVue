@@ -365,8 +365,6 @@
       Object.defineProperty(obj, key, {
         get: function get() {
           //get时收集依赖
-          console.log("\u89E6\u53D1\u4E86\u5C5E\u6027".concat(key, "\u7684get\u65B9\u6CD5"));
-
           if (Dep.target) {
             dep.depend();
 
@@ -380,7 +378,6 @@
         set: function set(newVal) {
           //set时触发依赖
           if (newVal !== data) {
-            console.log("\u5C5E\u6027\u503C".concat(key, "\u53D1\u751F\u4E86\u53D8\u5316"));
             observe(newVal); //先将传入的newVal也变成访问器属性
 
             data = newVal;
@@ -688,8 +685,7 @@
 
     function compileToFunction(html) {
       //1.生成AST抽象语法树
-      var ast = parseHTML(html);
-      console.log(ast); //2.根据抽象语法树生成JS字符串
+      var ast = parseHTML(html); //2.根据抽象语法树生成JS字符串
 
       var code = genCode(ast.children[0]);
       var render = new Function("with(this){return ".concat(code, "}")); //通过new Function这种形式形成最终的render函数
@@ -866,8 +862,8 @@
         //模板的重新编译或者初次编译
         var dom;
 
-        if (Vue._vnode) {
-          dom = Vue._vnode;
+        if (vm._vnode) {
+          dom = vm._vnode;
         } else {
           dom = document.querySelector(el);
         }
@@ -894,13 +890,184 @@
       //创建元素类型的虚拟节点
       if (!props) props = {};
       var key = props.key;
-      if (props.key) delete props.key; //if(children && children.length === 1) children = [children];
-
+      if (props.key) delete props.key;
       return vnode(vm, tag, key, props, children, undefined);
     }
     function createTextVNode(vm, text) {
       //创建文本类型的节点
       return vnode(vm, undefined, undefined, undefined, undefined, text);
+    }
+
+    function updateChildren(parentNode, oldCh, newCh) {
+      //我们需要注意的是diff算法本质上比较的是新旧虚拟节点，改变的是真正的DOM元素
+      console.log(oldCh);
+      console.log(newCh); //新旧指针
+
+      var oldStartIdx = 0,
+          oldEndIdx = oldCh.length - 1,
+          newStartIdx = 0,
+          newEndIdx = newCh.length - 1; //新旧节点
+
+      var oldStartVnode = oldCh[0],
+          oldEndVnode = oldCh[oldEndIdx],
+          newStartVnode = newCh[0],
+          newEndVnode = newCh[newEndIdx];
+      var map = {}; //进行旧节点上key和下标index之间的映射，也就是缓存策略
+
+      for (var i = oldStartIdx; i <= oldEndIdx; i++) {
+        map[oldCh[i].key] = i;
+      }
+
+      while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
+        //开始进行四次命中策略
+        // 1.旧前和新前对比,命中是同一个节点的话，更新这两个节点
+        if (isSame(oldStartVnode, newStartVnode)) {
+          // console.log("旧前和新前命中");
+          patchVNode(oldStartVnode, newStartVnode); //对于相同的节点调用patchVnode对节点的内部进行最小量更新
+
+          oldStartVnode = oldCh[++oldStartIdx];
+          if (!oldStartVnode) oldStartVnode = oldCh[++oldStartIdx];
+          newStartVnode = newCh[++newStartIdx]; //指针向下移
+        } else if (isSame(oldEndVnode, newEndVnode)) {
+          // console.log("旧后和新后命中");
+          patchVNode(oldEndVnode, newEndVnode);
+          oldEndVnode = oldCh[--oldEndIdx];
+          if (!oldEndVnode) oldEndVnode = oldCh[--oldEndIdx];
+          newEndVnode = newCh[--newEndIdx];
+        } else if (isSame(oldStartVnode, newEndVnode)) {
+          // console.log("旧前和新后命中");
+          patchVNode(oldStartVnode, newEndVnode); // 意味着此时需要移动旧前指向的节点
+
+          parentNode.insertBefore(oldStartVnode.dom, oldEndVnode.dom.nextSibling);
+          oldStartVnode = oldCh[++oldStartIdx];
+          if (!oldStartVnode) oldStartVnode = oldCh[++oldStartIdx];
+          newEndVnode = newCh[--newEndIdx];
+        } else if (isSame(oldEndVnode, newStartVnode)) {
+          // console.log("旧后和新前命中");
+          patchVNode(oldEndVnode, newStartVnode);
+          parentNode.insertBefore(oldEndVnode.dom, oldStartVnode.dom); //将旧后节点插入到旧前的节点之前
+
+          oldEndVnode = oldCh[--oldEndIdx];
+          if (!oldEndVnode) oldEndVnode = oldCh[--oldEndIdx];
+          newStartVnode = newCh[++newStartIdx];
+        } else {
+          //如果四种情况都没有命中的话，则需要查找newStartVnode对应的在老节点中的下标
+          var vnodeInOld = map[newStartVnode.key] || undefined;
+
+          if (vnodeInOld !== undefined) {
+            parentNode.insertBefore(oldCh[vnodeInOld].dom, oldCh[oldStartIdx].dom);
+            oldCh[vnodeInOld] = undefined;
+          } else {
+            //如果查找新节点在老节点中不存在的话则直接创建并且插入到oldStartIdx之前
+            parentNode.insertBefore(createElement(newCh[newStartIdx]), oldCh[oldStartIdx].dom);
+          }
+
+          newStartVnode = newCh[++newStartIdx];
+        }
+      } //1. 在所有循环都结束后来查看指针的情况，看看还有没有节点遗留在外面的
+
+
+      if (newStartIdx <= newEndIdx) {
+        //说明有新的节点需要插入到老节点中去
+        var pivot = oldCh[oldEndIdx] ? oldCh[oldEndIdx].dom.nextSibling : null;
+
+        for (var _i = newStartIdx; _i <= newEndIdx; _i++) {
+          parentNode.insertBefore(createElement(newCh[_i]), pivot);
+        }
+      } else if (oldStartIdx <= oldEndIdx) {
+        //说明还有老节点需要删除
+        for (var _i2 = oldStartIdx; _i2 <= oldEndIdx; _i2++) {
+          if (oldCh[_i2].dom) {
+            parentNode.removeChild(oldCh[_i2].dom);
+          }
+        }
+      }
+    }
+
+    function patchVNode(oldVNode, newVNode) {
+      //该函数用于比较两个虚拟节点进行最小量的更新
+      if (!isSame(oldVNode, newVNode)) {
+        //如果不是相同节点，则拆除旧的，用新的节点来替换
+        var dom = createElement$1(newVNode);
+        oldVNode.el.parentNode.replaceChild(dom, oldVNode.el);
+      } else {
+        if (newVNode.text) {
+          oldVNode.el.parentNode.innerHTML = newVNode.text;
+        } else {
+          if (oldVNode.text) {
+            var _dom = createElement$1(newVNode);
+
+            oldVNode.el.parentNode.appendChild(_dom);
+            oldVNode.el.parentNode.removeChild(oldVNode.el);
+          } else {
+            //如果是相同的节点则先更新节点的属性
+            updateProps(oldVNode, newVNode);
+
+            if (!oldVNode.children) {
+              var children = newVNode.children || [];
+
+              var _iterator = _createForOfIteratorHelper(children),
+                  _step;
+
+              try {
+                for (_iterator.s(); !(_step = _iterator.n()).done;) {
+                  var child = _step.value;
+
+                  var _dom2 = createElement$1(child);
+
+                  oldVNode.el.appendChild(_dom2);
+                }
+              } catch (err) {
+                _iterator.e(err);
+              } finally {
+                _iterator.f();
+              }
+            } else if (!newVNode.children) {
+              oldVNode.el.innerHTML = "";
+            } else if (oldVNode.children && newVNode.children) {
+              updateChildren(oldVNode.el, oldVNode.children, newVNode.children);
+            }
+          }
+        }
+      }
+    }
+    function updateProps(oldVNode, newVNode) {
+      var oldProps = oldVNode.props;
+      var newProps = newVNode.props;
+
+      for (var key in newProps) {
+        if (key === 'style') {
+          for (var item in newProps.style) {
+            oldVNode.el.style[item] = newProps.style[item];
+          }
+        } else {
+          oldVNode.el[key] = newProps[key];
+        }
+      }
+
+      for (var _key in oldProps) {
+        if (!newProps[_key]) {
+          oldVNode.el.removeAttribute(_key);
+        } else {
+          if (_key === 'style') {
+            var oldStyle = oldProps.style;
+            var newStyle = newProps.style;
+            updateStyle(oldStyle, newStyle, oldVNode.el);
+          }
+        }
+      }
+    }
+
+    function updateStyle(oldStyle, newStyle, el) {
+      for (var key in oldStyle) {
+        if (!newStyle[key]) {
+          el.style.removeAttribute(key);
+        }
+      }
+
+      for (var _key2 in newStyle) {
+        el.style[_key2] = newStyle[_key2];
+      }
     }
 
     function appendAttrs(vnode) {
@@ -915,7 +1082,7 @@
       }
     }
 
-    function createElement(vnode) {
+    function createElement$1(vnode) {
       //根据虚拟节点vnode创建对应的真实DOM元素
       if (vnode.tag) {
         vnode.el = document.createElement(vnode.tag);
@@ -923,7 +1090,7 @@
 
         if (vnode.children) {
           vnode.children.forEach(function (child) {
-            vnode.el.appendChild(createElement(child));
+            vnode.el.appendChild(createElement$1(child));
           });
         }
       } else {
@@ -932,25 +1099,26 @@
 
       return vnode.el;
     }
-
+    function isSame(vnode1, vnode2) {
+      //判断是否为同一虚拟节点
+      return vnode1.tag === vnode2.tag && vnode1.key === vnode2.key;
+    }
     function patch(oldVNode, newVNode, vm) {
       if (oldVNode.nodeType === 1) {
         //如果是真实的DOM元素的话则进行初次渲染
-        var dom = createElement(newVNode);
+        var dom = createElement$1(newVNode);
         oldVNode.parentNode.insertBefore(dom, oldVNode.nextSibling);
         oldVNode.parentNode.removeChild(oldVNode);
+        oldVNode.el = dom;
       } else {
         //如果不是则需要进入diff算法环节比较新旧虚拟节点的差异
+        console.log("diff算法");
+        patchVNode(oldVNode, newVNode);
+        newVNode.el = oldVNode.el;
+      } //根据diff算法更新旧的真实DOM节点
 
-        /*
-                diff算法
-        */
-        console.log("开始进行diff算法");
-      }
 
-      oldVNode.el = newVNode.el;
       vm._vnode = newVNode;
-      vm._dom = oldVNode.el;
     }
 
     function initLifeCycle(Vue) {
@@ -988,23 +1156,23 @@
       };
     }
 
-    function Vue$1(options) {
+    function Vue(options) {
       this._init(options); //初始化Vue
 
     }
 
-    Vue$1.options = {}; //全局的公共配置选项
+    Vue.options = {}; //全局的公共配置选项
     //init...方法是向vue实例的原型对象上添加方法
 
-    initLifeCycle(Vue$1);
-    initMixin(Vue$1);
+    initLifeCycle(Vue);
+    initMixin(Vue);
 
-    Vue$1.mixin = function (options) {
+    Vue.mixin = function (options) {
       //给Vue构造函数上添加全局的api函数
-      Vue$1.options = mergeOptions(Vue$1.options, options);
+      Vue.options = mergeOptions(Vue.options, options);
     };
 
-    return Vue$1;
+    return Vue;
 
 }));
 //# sourceMappingURL=vue.js.map

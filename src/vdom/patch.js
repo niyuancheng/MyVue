@@ -1,3 +1,5 @@
+import { patchVNode } from "./patchVNode";
+
 function appendAttrs(vnode) {
     for (let key in vnode.props) {
         if (key === 'style') {
@@ -9,7 +11,7 @@ function appendAttrs(vnode) {
         }
     }
 }
-function createElement(vnode) { //根据虚拟节点vnode创建对应的真实DOM元素
+export function createElement(vnode) { //根据虚拟节点vnode创建对应的真实DOM元素
     if (vnode.tag) {
         vnode.el = document.createElement(vnode.tag);
         appendAttrs(vnode);
@@ -25,22 +27,21 @@ function createElement(vnode) { //根据虚拟节点vnode创建对应的真实DO
 
 }
 
-export function patch(oldVNode, newVNode,vm) {
+export function isSame(vnode1, vnode2) { //判断是否为同一虚拟节点
+    return vnode1.tag === vnode2.tag && vnode1.key === vnode2.key;
+}
+
+export function patch(oldVNode, newVNode, vm) {
     if (oldVNode.nodeType === 1) { //如果是真实的DOM元素的话则进行初次渲染
         let dom = createElement(newVNode);
         oldVNode.parentNode.insertBefore(dom, oldVNode.nextSibling);
         oldVNode.parentNode.removeChild(oldVNode);
+        oldVNode.el = dom;
     } else { //如果不是则需要进入diff算法环节比较新旧虚拟节点的差异
-
-        /*
-                diff算法
-        */
-
-
-        console.log("开始进行diff算法");
+        console.log("diff算法");
+        patchVNode(oldVNode, newVNode);
+        newVNode.el = oldVNode.el;
     }
-
-    oldVNode.el = newVNode.el;
+    //根据diff算法更新旧的真实DOM节点
     vm._vnode = newVNode;
-    vm._dom = oldVNode.el;
 }

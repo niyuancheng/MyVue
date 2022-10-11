@@ -129,10 +129,11 @@ function initTemplate(vm) {
 }
 
 function mountComponent(el, vm) {
+
     let updateComponet = () => { //模板的重新编译或者初次编译
         let dom;
-        if (Vue._vnode) {
-            dom = Vue._vnode;
+        if (vm._vnode) {
+            dom = vm._vnode;
         } else {
             dom = document.querySelector(el);
         }

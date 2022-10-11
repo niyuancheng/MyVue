@@ -14,7 +14,6 @@ export function createElementVNode(vm,tag,props,children) { //创建元素类型
     if(!props) props = {};
     let key = props.key;
     if(props.key) delete props.key;
-    //if(children && children.length === 1) children = [children];
     return vnode(vm,tag,key,props,children,undefined);
 }
 
