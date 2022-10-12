@@ -47,7 +47,9 @@ export function updateProps(oldVNode, newVNode) {
             if(oldVNode.el[key]) {
                 oldVNode.el.removeAttribute(key);
             }
-            oldVNode.el.setAttribute(key, newProps[key]);
+            if(typeof newProps[key]!=='function') {
+                 oldVNode.el.setAttribute(key, newProps[key]);
+            }
         }
     }
 

@@ -107,6 +107,12 @@ function initWatch(vm) { //初始化监视属性
 
 }
 
+function initMethod(vm) {
+    for(let key in vm.$options.methods) {
+        vm[key] = vm.$options.methods[key];
+    }
+}
+
 function initState(vm) {
     let opts = vm.$options;
     if (opts.data) {
@@ -117,6 +123,9 @@ function initState(vm) {
     }
     if (opts.watch) {
         initWatch(vm);
+    }
+    if(opts.methods) {
+        initMethod(vm);
     }
 }
 

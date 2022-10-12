@@ -848,6 +848,12 @@
     }
   }
 
+  function initMethod(vm) {
+    for (var key in vm.$options.methods) {
+      vm[key] = vm.$options.methods[key];
+    }
+  }
+
   function initState(vm) {
     var opts = vm.$options;
 
@@ -861,6 +867,10 @@
 
     if (opts.watch) {
       initWatch(vm);
+    }
+
+    if (opts.methods) {
+      initMethod(vm);
     }
   }
 
@@ -893,9 +903,11 @@
     return ['div', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'nav', 'section', 'header', 'footer', 'a', 'p', 'i', 'input', 'button', 'ul', 'ol', 'li', 'table'].includes(tag);
   }
 
-  var directives = /^v-|^@|^:.*/g; //用于匹配属性的正则表达式
+  //该模块用于解析虚拟DOM中的指令
+  var directives = /(^v-.+)|(^@.+)|(^:.+)/g; //用于匹配属性的正则表达式
 
   function isDirective(key) {
+    //判断对应的键是否为指令
     return directives.test(key);
   }
 
@@ -904,22 +916,47 @@
   }
 
   function parseDirectives(key, vnode) {
+    directives.lastIndex = 0;
+
     if (isDirective(key)) {
       if (/^v-([^:]+)(.*)/.test(key)) {
         var res = key.match(/^v-([^:]+):?(.*)/);
-        var direc = res[1];
+        var direc = res[1],
+            target = res[2];
 
         switch (direc) {
           case "bind":
-            var target = res[2];
             vnode.props[target] = genFunc(vnode.props[key]).call(vnode.vm);
             break;
+
+          case "on":
+            var funcName = vnode.props[key]; //保存指令中的函数名
+
+            vnode.props[target] = function () {
+              console.log(funcName);
+              vnode.vm[funcName].call(vnode.vm);
+            };
+
+            break;
         }
-      } else if (/^@/.test(key)) ; else if (/^:/.test(key)) ;
+      } else if (/^@(.+)/.test(key)) {
+        var _res = key.match(/^@(.+)/);
+
+        var _target = _res[1];
+        var _funcName = vnode.props[key];
+        console.log(_target);
+
+        vnode.props[_target] = function () {
+          vnode.vm[_funcName].call(vnode.vm);
+        };
+      } else if (/^:(.+)/.test(key)) {
+        var _res2 = key.match(/^:(.+)/);
+
+        var _target2 = _res2[1];
+        vnode.props[_target2] = genFunc(vnode.props[key]).call(vnode.vm);
+      }
 
       delete vnode.props[key];
-    } else {
-      return;
     }
   }
 
@@ -1111,7 +1148,9 @@
           oldVNode.el.removeAttribute(key);
         }
 
-        oldVNode.el.setAttribute(key, newProps[key]);
+        if (typeof newProps[key] !== 'function') {
+          oldVNode.el.setAttribute(key, newProps[key]);
+        }
       }
     }
 
@@ -1147,7 +1186,13 @@
           vnode.el.style[item] = vnode.props.style[item];
         }
       } else {
-        vnode.el.setAttribute(key, vnode.props[key]);
+        console.log(vnode.props[key]);
+
+        if (typeof vnode.props[key] !== 'function') {
+          vnode.el.setAttribute(key, vnode.props[key]);
+        } else {
+          vnode.el.addEventListener(key, vnode.props[key]);
+        }
       }
     }
   }
@@ -1247,8 +1292,8 @@
       var vdom = vm._render(); //调用render函数生成虚拟节点
 
 
-      console.log(vdom);
       parseProps(vdom);
+      console.log(vdom);
       patch(el, vdom, vm);
     };
   }

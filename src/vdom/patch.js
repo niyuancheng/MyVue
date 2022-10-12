@@ -3,12 +3,19 @@ import { patchVNode } from "./patchVNode";
 
 function appendAttrs(vnode) {
     for (let key in vnode.props) {
+        
         if (key === 'style') {
             for (let item in vnode.props.style) {
                 vnode.el.style[item] = vnode.props.style[item];
             }
         } else {
-            vnode.el.setAttribute(key, vnode.props[key]);
+            console.log(vnode.props[key])
+            if(typeof vnode.props[key] !== 'function') {
+                vnode.el.setAttribute(key, vnode.props[key]);
+            } else {
+                vnode.el.addEventListener(key,vnode.props[key]);
+            }
+            
         }
     }
 }
