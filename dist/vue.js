@@ -874,6 +874,7 @@
   function mountComponent(el, vm) {
     var updateComponet = function updateComponet() {
       //模板的重新编译或者初次编译
+      console.log("模板编译");
       var dom = null;
 
       if (vm._vnode) {
@@ -890,6 +891,50 @@
 
   function isNativeTag(tag) {
     return ['div', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'nav', 'section', 'header', 'footer', 'a', 'p', 'i', 'input', 'button', 'ul', 'ol', 'li', 'table'].includes(tag);
+  }
+
+  var directives = /^v-|^@|^:.*/g; //用于匹配属性的正则表达式
+
+  function isDirective(key) {
+    return directives.test(key);
+  }
+
+  function genFunc(code) {
+    return new Function("with(this){return ".concat(code, "}"));
+  }
+
+  function parseDirectives(key, vnode) {
+    if (isDirective(key)) {
+      if (/^v-([^:]+)(.*)/.test(key)) {
+        var res = key.match(/^v-([^:]+):?(.*)/);
+        var direc = res[1];
+
+        switch (direc) {
+          case "bind":
+            var target = res[2];
+            vnode.props[target] = genFunc(vnode.props[key]).call(vnode.vm);
+            break;
+        }
+      } else if (/^@/.test(key)) ; else if (/^:/.test(key)) ;
+
+      delete vnode.props[key];
+    } else {
+      return;
+    }
+  }
+
+  function parseProps(vnode) {
+    var props = vnode.props || [];
+
+    for (var key in props) {
+      parseDirectives(key, vnode);
+    }
+
+    if (vnode.children) {
+      vnode.children.forEach(function (child) {
+        parseProps(child);
+      });
+    }
   }
 
   function vnode(vm, tag, key, props, children, text, type) {
@@ -919,24 +964,6 @@
   function createComponentVNode(vm, tag, props, children) {
     //创建组件类型的虚拟节点
     return vnode(vm, tag, undefined, props, children, undefined, "component");
-  }
-
-  function genFunc(code) {
-    return new Function("with(this){return ".concat(code, "}"));
-  }
-
-  function parseDirectives(key, vnode) {
-    if (/^v-([^:]+)(.*)/.test(key)) {
-      var res = key.match(/^v-([^:]+):?(.*)/);
-      var direc = res[1];
-
-      switch (direc) {
-        case "bind":
-          var target = res[2];
-          vnode.el.setAttribute(target, genFunc(vnode.props[key]).call(vnode.vm));
-          break;
-      }
-    } else if (/^@/.test(key)) ; else if (/^:/.test(key)) ;
   }
 
   function updateChildren(parentNode, oldCh, newCh) {
@@ -1080,7 +1107,11 @@
           oldVNode.el.style[item] = newProps.style[item];
         }
       } else {
-        oldVNode.el[key] = newProps[key];
+        if (oldVNode.el[key]) {
+          oldVNode.el.removeAttribute(key);
+        }
+
+        oldVNode.el.setAttribute(key, newProps[key]);
       }
     }
 
@@ -1109,24 +1140,14 @@
     }
   }
 
-  var directives = /^v-|^@|^:.*/g; //用于匹配属性的正则表达式
-
-  function isDirective(key) {
-    return directives.test(key);
-  }
-
   function appendAttrs(vnode) {
     for (var key in vnode.props) {
-      if (isDirective(key)) {
-        parseDirectives(key, vnode);
-      } else {
-        if (key === 'style') {
-          for (var item in vnode.props.style) {
-            vnode.el.style[item] = vnode.props.style[item];
-          }
-        } else {
-          vnode.el.setAttribute(key, vnode.props[key]);
+      if (key === 'style') {
+        for (var item in vnode.props.style) {
+          vnode.el.style[item] = vnode.props.style[item];
         }
+      } else {
+        vnode.el.setAttribute(key, vnode.props[key]);
       }
     }
   }
@@ -1166,7 +1187,6 @@
       createElement$1(newVNode, vm);
       callHooks(vm, "mounted");
       vm._vnode = newVNode;
-      return newVNode.el;
     }
 
     if (oldVNode.nodeType === 1) {
@@ -1177,7 +1197,6 @@
 
       oldVNode.parentNode.insertBefore(_dom, oldVNode.nextSibling);
       oldVNode.parentNode.removeChild(oldVNode);
-      oldVNode.el = _dom;
       callHooks(vm, "mounted");
     } else {
       //如果不是则需要进入diff算法环节比较新旧虚拟节点的差异
@@ -1189,7 +1208,7 @@
 
 
     vm._vnode = newVNode;
-    return oldVNode.el;
+    return newVNode.el;
   }
 
   function initLifeCycle(Vue) {
@@ -1225,9 +1244,11 @@
       //将虚拟DOM转变为真实DOM并且挂载到DOM树上
       var vm = this;
 
-      var vdom = vm._render();
+      var vdom = vm._render(); //调用render函数生成虚拟节点
+
 
       console.log(vdom);
+      parseProps(vdom);
       patch(el, vdom, vm);
     };
   }

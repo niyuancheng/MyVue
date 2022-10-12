@@ -1,4 +1,5 @@
 import isNativeTag from "./utils/isNativeTag";
+import { parseProps } from "./vdom/direvtives";
 import { createComponentVNode, createElementVNode, createTextVNode } from "./vdom/index" //创建不同类型的虚拟节点
 import { patch } from "./vdom/patch";
 
@@ -29,8 +30,9 @@ export function initLifeCycle(Vue) {
 
     Vue.prototype._update = function(el) { //将虚拟DOM转变为真实DOM并且挂载到DOM树上
         let vm = this;
-        let vdom = vm._render();
+        let vdom = vm._render(); //调用render函数生成虚拟节点
         console.log(vdom)
+        parseProps(vdom);
         patch(el,vdom,vm);
     }
 }

@@ -1,25 +1,14 @@
 import { callHooks } from "../hooks";
-import { parseDirectives } from "./direvtives";
 import { patchVNode } from "./patchVNode";
-
-let directives = /^v-|^@|^:.*/g; //用于匹配属性的正则表达式
-
-function isDirective(key) {
-    return directives.test(key);
-}
 
 function appendAttrs(vnode) {
     for (let key in vnode.props) {
-        if (isDirective(key)) {
-            parseDirectives(key,vnode);
-        } else {
-            if (key === 'style') {
-                for (let item in vnode.props.style) {
-                    vnode.el.style[item] = vnode.props.style[item];
-                }
-            } else {
-                vnode.el.setAttribute(key, vnode.props[key]);
+        if (key === 'style') {
+            for (let item in vnode.props.style) {
+                vnode.el.style[item] = vnode.props.style[item];
             }
+        } else {
+            vnode.el.setAttribute(key, vnode.props[key]);
         }
     }
 }
@@ -57,14 +46,12 @@ export function patch(oldVNode, newVNode, vm) {
         let dom = createElement(newVNode, vm);
         callHooks(vm, "mounted");
         vm._vnode = newVNode;
-        return newVNode.el;
     }
     if (oldVNode.nodeType === 1) { //如果是真实的DOM元素的话则进行初次渲染
         callHooks(vm, "beforeMount");
         let dom = createElement(newVNode, vm);
         oldVNode.parentNode.insertBefore(dom, oldVNode.nextSibling);
         oldVNode.parentNode.removeChild(oldVNode);
-        oldVNode.el = dom;
         callHooks(vm, "mounted");
     } else { //如果不是则需要进入diff算法环节比较新旧虚拟节点的差异
         callHooks(vm, "beforeUpdate");
@@ -74,5 +61,5 @@ export function patch(oldVNode, newVNode, vm) {
     }
     //根据diff算法更新旧的真实DOM节点
     vm._vnode = newVNode;
-    return oldVNode.el;
+    return newVNode.el
 }
