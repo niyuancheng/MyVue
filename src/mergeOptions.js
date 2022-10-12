@@ -39,6 +39,7 @@ export default function mergeOptions(cons, child) {
 
     const options = {};
 
+    if(!child.components) child.components = {};
     let parent = cons.options;
     for (let key in parent) {
         mergeFiled(key);

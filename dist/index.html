@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vue手写测试</title>
+    <script src="./vue.js"></script>
+</head>
+
+<body>
+    <div id="app" class="app2" key="index">
+        <div class="test" v-bind:style="color:blue;background:yellow">{{name}}---{{age}}</div>
+        <span>{{age}} hello world {{name}} My name is yyx</span>
+        <h1>{{fullname}} -- {{fullname}}--{{fullname}}</h1>
+        <my-button />
+    </div>
+    <script>
+        Vue.component("my-button",{
+            data() {
+                return {
+                    message:"点击此处"
+                }
+            },
+            template:"<button>{{message}}</button>",
+            created() {
+                console.log("created",this)
+            },
+            mounted() {
+                setTimeout(()=>{
+                    this.message = "改变按钮的内容"
+                },2000)
+            },
+        })
+
+        let vm = new Vue({
+            el: "#app",
+            data: {
+                name: "yuency",
+                age: 21,
+                arry: [100, 200, 90, 80, -10, 109],
+                firstname: "ni",
+                lastname: "yuancheng"
+            },
+            computed: {
+                fullname() {
+                    return this.firstname + " " + this.lastname;
+                }
+            },
+            watch: {
+                firstname: {
+                    handler(newVal, oldVal) {
+                        console.log(newVal, oldVal);
+                    }
+                }
+            },
+            beforeCreate() {
+                console.log("父组件创建")
+            }
+        })
+
+        console.log(vm)
+    </script>
+</body>
+
+</html>

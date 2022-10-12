@@ -494,6 +494,7 @@
   });
   function mergeOptions(cons, child) {
     var options = {};
+    if (!child.components) child.components = {};
     var parent = cons.options;
 
     for (var key in parent) {
@@ -916,6 +917,7 @@
     return vnode(vm, undefined, undefined, undefined, undefined, text, "text");
   }
   function createComponentVNode(vm, tag, props, children) {
+    //创建组件类型的虚拟节点
     return vnode(vm, tag, undefined, props, children, undefined, "component");
   }
 
@@ -1134,14 +1136,18 @@
   function patch(oldVNode, newVNode, vm) {
     if (oldVNode.nodeType === 1) {
       //如果是真实的DOM元素的话则进行初次渲染
+      callHooks(vm, "beforeMount");
       var dom = createElement$1(newVNode, vm);
       oldVNode.parentNode.insertBefore(dom, oldVNode.nextSibling);
       oldVNode.parentNode.removeChild(oldVNode);
       oldVNode.el = dom;
+      callHooks(vm, "mounted");
     } else {
       //如果不是则需要进入diff算法环节比较新旧虚拟节点的差异
+      callHooks(vm, "beforeUpdate");
       patchVNode(oldVNode, newVNode);
       newVNode.el = oldVNode.el;
+      callHooks(vm, "updated");
     } //根据diff算法更新旧的真实DOM节点
 
 
@@ -1183,7 +1189,6 @@
 
       var vdom = vm._render();
 
-      console.log(vdom);
       patch(el, vdom, vm);
     };
   }

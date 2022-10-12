@@ -22,6 +22,6 @@ export function createTextVNode(vm,text) { //创建文本类型的节点
     return vnode(vm,undefined,undefined,undefined,undefined,text,"text");
 }
 
-export function createComponentVNode(vm,tag,props,children) {
+export function createComponentVNode(vm,tag,props,children) { //创建组件类型的虚拟节点
     return vnode(vm,tag,undefined,props,children,undefined,"component");
 }
