@@ -1,3 +1,5 @@
+//该模块用于解析虚拟DOM中的指令
+
 let directives = /^v-|^@|^:.*/g; //用于匹配属性的正则表达式
 
 function isDirective(key) {
