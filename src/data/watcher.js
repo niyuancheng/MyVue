@@ -59,8 +59,6 @@ class Watcher {
                 queueWatcher(this);
             }
         }
-        
-        
     }
 
     run() { //启动watcher的执行

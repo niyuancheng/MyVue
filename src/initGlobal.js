@@ -2,7 +2,7 @@ import mergeOptions from "./mergeOptions"
 
 export function initGlobal(Vue) {
     Vue.mixin = function(options) { //给Vue构造函数上添加全局的api函数
-        Vue.options = mergeOptions(Vue.options,options)
+        Vue.options = mergeOptions(Vue ,options)
     }
 
     Vue.extend = function(options) { //该静态方法用于生成组件的实例对象

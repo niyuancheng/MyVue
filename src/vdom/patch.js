@@ -23,13 +23,8 @@ export function createElement(vnode, vm) { //根据虚拟节点vnode创建对应
                 })
             }
         } else if (vnode.type === 'component') {
-            let com = new vm.$options.components[vnode.tag]();
-
-            let container = document.createElement("div");
-            container.id = "container";
-            document.body.appendChild(container);
-
-            com.$mount("#container");
+            let com = new vm.$options.components[vnode.tag](); //获得组件节点的实例对象
+            com.$mount();
 
             return com._vnode.el;
         }
@@ -46,6 +41,13 @@ export function isSame(vnode1, vnode2) { //判断是否为同一虚拟节点
 }
 
 export function patch(oldVNode, newVNode, vm) {
+    if(!oldVNode) { //当没有传入oldVNode时，代表该次渲染的节点为组件节点
+        callHooks(vm,"beforeMount");
+        let dom = createElement(newVNode, vm);
+        callHooks(vm,"mounted");
+        vm._vnode = newVNode;
+        return newVNode.el;
+    }
     if (oldVNode.nodeType === 1) { //如果是真实的DOM元素的话则进行初次渲染
         callHooks(vm,"beforeMount");
         let dom = createElement(newVNode, vm);
@@ -61,4 +63,5 @@ export function patch(oldVNode, newVNode, vm) {
     }
     //根据diff算法更新旧的真实DOM节点
     vm._vnode = newVNode;
+    return oldVNode.el;
 }

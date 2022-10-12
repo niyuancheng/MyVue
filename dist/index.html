@@ -17,20 +17,28 @@
         <my-button />
     </div>
     <script>
-        Vue.component("my-button",{
-            data() {
-                return {
-                    message:"点击此处"
+        // 全局配置
+        Vue.mixin({
+            methods: {
+                say() {
+                    console.log("hello world");
                 }
             },
-            template:"<button>{{message}}</button>",
+        })
+        Vue.component("my-button", {
+            data() {
+                return {
+                    message: "点击此处"
+                }
+            },
+            template: "<button>{{message}}</button>",
             created() {
-                console.log("created",this)
+                console.log("created", this)
             },
             mounted() {
-                setTimeout(()=>{
+                setTimeout(() => {
                     this.message = "改变按钮的内容"
-                },2000)
+                }, 2000)
             },
         })
 

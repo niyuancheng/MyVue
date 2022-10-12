@@ -129,7 +129,7 @@ function initTemplate(vm) {
 function mountComponent(el, vm) {
 
     let updateComponet = () => { //模板的重新编译或者初次编译
-        let dom;
+        let dom = null;
         if (vm._vnode) {
             dom = vm._vnode;
         } else {

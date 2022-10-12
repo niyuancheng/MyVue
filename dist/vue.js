@@ -874,7 +874,7 @@
   function mountComponent(el, vm) {
     var updateComponet = function updateComponet() {
       //模板的重新编译或者初次编译
-      var dom;
+      var dom = null;
 
       if (vm._vnode) {
         dom = vm._vnode;
@@ -889,7 +889,7 @@
   }
 
   function isNativeTag(tag) {
-    return ['div', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'nav', 'section', 'header', 'footer', 'a', 'p', 'i', 'input', 'button'].includes(tag);
+    return ['div', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'nav', 'section', 'header', 'footer', 'a', 'p', 'i', 'input', 'button', 'ul', 'ol', 'li', 'table'].includes(tag);
   }
 
   function vnode(vm, tag, key, props, children, text, type) {
@@ -1116,11 +1116,9 @@
           });
         }
       } else if (vnode.type === 'component') {
-        var com = new vm.$options.components[vnode.tag]();
-        var container = document.createElement("div");
-        container.id = "container";
-        document.body.appendChild(container);
-        com.$mount("#container");
+        var com = new vm.$options.components[vnode.tag](); //获得组件节点的实例对象
+
+        com.$mount();
         return com._vnode.el;
       }
     } else {
@@ -1134,13 +1132,24 @@
     return vnode1.tag === vnode2.tag && vnode1.key === vnode2.key;
   }
   function patch(oldVNode, newVNode, vm) {
+    if (!oldVNode) {
+      //当没有传入oldVNode时，代表该次渲染的节点为组件节点
+      callHooks(vm, "beforeMount");
+      createElement$1(newVNode, vm);
+      callHooks(vm, "mounted");
+      vm._vnode = newVNode;
+      return newVNode.el;
+    }
+
     if (oldVNode.nodeType === 1) {
       //如果是真实的DOM元素的话则进行初次渲染
       callHooks(vm, "beforeMount");
-      var dom = createElement$1(newVNode, vm);
-      oldVNode.parentNode.insertBefore(dom, oldVNode.nextSibling);
+
+      var _dom = createElement$1(newVNode, vm);
+
+      oldVNode.parentNode.insertBefore(_dom, oldVNode.nextSibling);
       oldVNode.parentNode.removeChild(oldVNode);
-      oldVNode.el = dom;
+      oldVNode.el = _dom;
       callHooks(vm, "mounted");
     } else {
       //如果不是则需要进入diff算法环节比较新旧虚拟节点的差异
@@ -1152,6 +1161,7 @@
 
 
     vm._vnode = newVNode;
+    return oldVNode.el;
   }
 
   function initLifeCycle(Vue) {
@@ -1196,7 +1206,7 @@
   function initGlobal(Vue) {
     Vue.mixin = function (options) {
       //给Vue构造函数上添加全局的api函数
-      Vue.options = mergeOptions(Vue.options, options);
+      Vue.options = mergeOptions(Vue, options);
     };
 
     Vue.extend = function (options) {
