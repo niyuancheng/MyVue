@@ -40,7 +40,7 @@ function genProps(attrs) {
     let res = `{`;
     res += attrs.map(attr => {
         if (attr.key !== "style" && attr.key!=="v-bind:style") { //如果该属性值不为style的话
-            return `${attr.key}:${JSON.stringify(attr.value)}`;
+            return `${JSON.stringify(attr.key)}:${JSON.stringify(attr.value)}`;
         } else {
             let str = ``;
             str += `style:{`;

@@ -10,8 +10,8 @@
 </head>
 
 <body>
-    <div id="app" class="app2" key="index">
-        <div class="test" v-bind:style="color:blue;background:yellow">{{name}}---{{age}}</div>
+    <div id="app" v-bind:class="className" key="index">
+        <div class="test" style="color:blue;background:yellow">{{name}}---{{age}}</div>
         <span>{{age}} hello world {{name}} My name is yyx</span>
         <h1>{{fullname}} -- {{fullname}}--{{fullname}}</h1>
         <my-button />
@@ -49,7 +49,8 @@
                 age: 21,
                 arry: [100, 200, 90, 80, -10, 109],
                 firstname: "ni",
-                lastname: "yuancheng"
+                lastname: "yuancheng",
+                className:"appClass"
             },
             computed: {
                 fullname() {

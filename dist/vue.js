@@ -569,7 +569,7 @@
     res += attrs.map(function (attr) {
       if (attr.key !== "style" && attr.key !== "v-bind:style") {
         //如果该属性值不为style的话
-        return "".concat(attr.key, ":").concat(JSON.stringify(attr.value));
+        return "".concat(JSON.stringify(attr.key), ":").concat(JSON.stringify(attr.value));
       } else {
         var str = "";
         str += "style:{";
@@ -921,6 +921,24 @@
     return vnode(vm, tag, undefined, props, children, undefined, "component");
   }
 
+  function genFunc(code) {
+    return new Function("with(this){return ".concat(code, "}"));
+  }
+
+  function parseDirectives(key, vnode) {
+    if (/^v-([^:]+)(.*)/.test(key)) {
+      var res = key.match(/^v-([^:]+):?(.*)/);
+      var direc = res[1];
+
+      switch (direc) {
+        case "bind":
+          var target = res[2];
+          vnode.el.setAttribute(target, genFunc(vnode.props[key]).call(vnode.vm));
+          break;
+      }
+    } else if (/^@/.test(key)) ; else if (/^:/.test(key)) ;
+  }
+
   function updateChildren(parentNode, oldCh, newCh) {
     //我们需要注意的是diff算法本质上比较的是新旧虚拟节点，改变的是真正的DOM元素
     //新旧指针
@@ -1091,14 +1109,24 @@
     }
   }
 
+  var directives = /^v-|^@|^:.*/g; //用于匹配属性的正则表达式
+
+  function isDirective(key) {
+    return directives.test(key);
+  }
+
   function appendAttrs(vnode) {
     for (var key in vnode.props) {
-      if (key === 'style') {
-        for (var item in vnode.props.style) {
-          vnode.el.style[item] = vnode.props.style[item];
-        }
+      if (isDirective(key)) {
+        parseDirectives(key, vnode);
       } else {
-        vnode.el.setAttribute(key, vnode.props[key]);
+        if (key === 'style') {
+          for (var item in vnode.props.style) {
+            vnode.el.style[item] = vnode.props.style[item];
+          }
+        } else {
+          vnode.el.setAttribute(key, vnode.props[key]);
+        }
       }
     }
   }
@@ -1199,6 +1227,7 @@
 
       var vdom = vm._render();
 
+      console.log(vdom);
       patch(el, vdom, vm);
     };
   }
