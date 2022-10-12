@@ -135,7 +135,6 @@ function mountComponent(el, vm) {
         } else {
             dom = document.querySelector(el);
         }
-        console.log(vm)
         vm._update(dom);
     }
     let watcher = new Watcher(vm, updateComponet); //watcher观察者，通常一个Vue实例或者一个Vue组件对应一个Watcher实例，也就是观察者对象

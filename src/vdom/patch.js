@@ -51,7 +51,6 @@ export function patch(oldVNode, newVNode, vm) {
         oldVNode.parentNode.removeChild(oldVNode);
         oldVNode.el = dom;
     } else { //如果不是则需要进入diff算法环节比较新旧虚拟节点的差异
-        console.log("diff算法");
         patchVNode(oldVNode, newVNode);
         newVNode.el = oldVNode.el;
     }

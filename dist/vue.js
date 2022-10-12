@@ -881,8 +881,6 @@
         dom = document.querySelector(el);
       }
 
-      console.log(vm);
-
       vm._update(dom);
     };
 
@@ -923,9 +921,7 @@
 
   function updateChildren(parentNode, oldCh, newCh) {
     //我们需要注意的是diff算法本质上比较的是新旧虚拟节点，改变的是真正的DOM元素
-    console.log(oldCh);
-    console.log(newCh); //新旧指针
-
+    //新旧指针
     var oldStartIdx = 0,
         oldEndIdx = oldCh.length - 1,
         newStartIdx = 0,
@@ -1144,7 +1140,6 @@
       oldVNode.el = dom;
     } else {
       //如果不是则需要进入diff算法环节比较新旧虚拟节点的差异
-      console.log("diff算法");
       patchVNode(oldVNode, newVNode);
       newVNode.el = oldVNode.el;
     } //根据diff算法更新旧的真实DOM节点

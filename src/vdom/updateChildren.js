@@ -3,8 +3,6 @@ import { patchVNode } from "./patchVNode";
 
 export function updateChildren(parentNode, oldCh, newCh) {
     //我们需要注意的是diff算法本质上比较的是新旧虚拟节点，改变的是真正的DOM元素
-    console.log(oldCh);
-    console.log(newCh);
     //新旧指针
     let oldStartIdx = 0,
         oldEndIdx = oldCh.length - 1,
