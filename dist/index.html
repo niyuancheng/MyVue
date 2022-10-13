@@ -20,10 +20,12 @@
 </head>
 
 <body>
-    <div id="app" v-bind:class="className" @click="say" :key="1+1">
-        <div class="test" style="color:blue;background:yellow">{{name}}---{{age}}</div>
+    <div id="app" v-if="isShow" :class="className" @click="say">
+        <div class="test" style="color:blue;background:yellow" v-for="(index,item) in arr">{{name}}---{{age}}---{{item}}
+        </div>
         <span>{{age}} hello world {{name}} My name is yyx</span>
         <h1>{{fullname}} -- {{fullname}}--{{fullname}}</h1>
+        <my-button></my-button>
     </div>
     <script>
         // 全局配置
@@ -37,7 +39,8 @@
         Vue.component("my-button", {
             data() {
                 return {
-                    message: "点击此处"
+                    message: "点击此处",
+                    isShow: false
                 }
             },
             template: "<button>{{message}}</button>",
@@ -51,10 +54,11 @@
             data: {
                 name: "yuency",
                 age: 21,
-                arry: [100, 200, 90, 80, -10, 109],
+                arr: [100, 200, 90, 80, -10, 109],
                 firstname: "ni",
                 lastname: "yuancheng",
-                className:"appClass"
+                className: "appClass",
+                isShow: true
             },
             methods: {
                 say() {
@@ -75,17 +79,20 @@
             },
             beforeCreate() {
                 console.log("父组件创建")
+            },
+            components:{
+
             }
         })
 
 
         console.log(vm)
-        setTimeout(()=>{
+        setTimeout(() => {
             vm.className = "app2";
             vm.age = 200;
-
+            vm.isShow = false;
             console.log(vm)
-        },3000);
+        }, 3000);
     </script>
 </body>
 

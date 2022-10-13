@@ -1,38 +1,51 @@
 import isNativeTag from "./utils/isNativeTag";
-import { parseProps } from "./vdom/directives";
 import { createComponentVNode, createElementVNode, createTextVNode } from "./vdom/index" //创建不同类型的虚拟节点
 import { patch } from "./vdom/patch";
 
-
 export function initLifeCycle(Vue) {
-    Vue.prototype._c = function(tag,props,children) { //创建元素节点
-        if(isNativeTag(tag)) {
-            return createElementVNode(this,...arguments);
+    Vue.prototype._c = function (tag, props, children) { //创建元素节点
+        if (isNativeTag(tag)) {
+            return createElementVNode(this, ...arguments);
         }
-        return createComponentVNode(this,...arguments);
+        return createComponentVNode(this, ...arguments);
     }
 
-    Vue.prototype._s = function(val) { 
-        if(typeof val ==='object') {
+    Vue.prototype._s = function (val) {
+        if (typeof val === 'object') {
             val = JSON.stringify(val); //触发了data中数据的set方法
         }
         return val;
     }
 
-    Vue.prototype._v = function(text) { //创建文本节点
-        return createTextVNode(this,text);
+    Vue.prototype._v = function (text) { //创建文本节点
+        return createTextVNode(this, text);
     }
 
-    Vue.prototype._render = function() { //调用vm实例上的render函数创建对应的虚拟DOM
+    Vue.prototype._l = function (arr, cb) {
+        let res = [];
+        if (cb.length === 1) {
+            for (let index = 0; index < arr.length; index++) {
+                res.push(cb.call(this, index));
+            }
+        } else if (cb.length === 2) {
+            for (let index = 0; index < arr.length; index++) {
+                res.push(cb.call(this, index, arr[index]));
+            }
+        }
+
+        return res;
+    }
+
+    Vue.prototype._render = function () { //调用vm实例上的render函数创建对应的虚拟DOM
         let vm = this;
         return vm.$options.render.call(vm); //所谓的render函数就是之前拼接字符串生成的函数
     }
 
-    Vue.prototype._update = function(el) { //将虚拟DOM转变为真实DOM并且挂载到DOM树上
+    Vue.prototype._update = function (el) { //将虚拟DOM转变为真实DOM并且挂载到DOM树上
         let vm = this;
         let vdom = vm._render(); //调用render函数生成虚拟节点
-        parseProps(vdom);
         console.log(vdom);
-        patch(el,vdom,vm);
+        
+        patch(el, vdom, vm);
     }
 }

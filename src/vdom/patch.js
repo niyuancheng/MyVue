@@ -3,19 +3,16 @@ import { patchVNode } from "./patchVNode";
 
 function appendAttrs(vnode) {
     for (let key in vnode.props) {
-        
         if (key === 'style') {
             for (let item in vnode.props.style) {
                 vnode.el.style[item] = vnode.props.style[item];
             }
         } else {
-            console.log(vnode.props[key])
-            if(typeof vnode.props[key] !== 'function') {
+            if (typeof vnode.props[key] !== 'function') {
                 vnode.el.setAttribute(key, vnode.props[key]);
             } else {
-                vnode.el.addEventListener(key,vnode.props[key]);
+                vnode.el.addEventListener(key, vnode.props[key]);
             }
-            
         }
     }
 }
@@ -31,6 +28,7 @@ export function createElement(vnode, vm) { //根据虚拟节点vnode创建对应
                 })
             }
         } else if (vnode.type === 'component') {
+            console.log(vm)
             let com = new vm.$options.components[vnode.tag](); //获得组件节点的实例对象
             com.$mount();
 
@@ -38,7 +36,7 @@ export function createElement(vnode, vm) { //根据虚拟节点vnode创建对应
         }
 
     } else {
-        vnode.el = document.createTextNode(vnode.text);
+        vnode.el = document.createTextNode(vnode.text || "");
     }
     return vnode.el;
 }
@@ -53,19 +51,21 @@ export function patch(oldVNode, newVNode, vm) {
         let dom = createElement(newVNode, vm);
         callHooks(vm, "mounted");
         vm._vnode = newVNode;
+    } else {
+        if (oldVNode.nodeType === 1) { //如果是真实的DOM元素的话则进行初次渲染
+            callHooks(vm, "beforeMount");
+            let dom = createElement(newVNode, vm);
+            oldVNode.parentNode.insertBefore(dom, oldVNode.nextSibling);
+            oldVNode.parentNode.removeChild(oldVNode);
+            callHooks(vm, "mounted");
+        } else { //如果不是则需要进入diff算法环节比较新旧虚拟节点的差异
+            callHooks(vm, "beforeUpdate");
+            patchVNode(oldVNode, newVNode);
+            newVNode.el = oldVNode.el;
+            callHooks(vm, "updated");
+        }
     }
-    if (oldVNode.nodeType === 1) { //如果是真实的DOM元素的话则进行初次渲染
-        callHooks(vm, "beforeMount");
-        let dom = createElement(newVNode, vm);
-        oldVNode.parentNode.insertBefore(dom, oldVNode.nextSibling);
-        oldVNode.parentNode.removeChild(oldVNode);
-        callHooks(vm, "mounted");
-    } else { //如果不是则需要进入diff算法环节比较新旧虚拟节点的差异
-        callHooks(vm, "beforeUpdate");
-        patchVNode(oldVNode, newVNode);
-        newVNode.el = oldVNode.el;
-        callHooks(vm, "updated");
-    }
+
     //根据diff算法更新旧的真实DOM节点
     vm._vnode = newVNode;
     return newVNode.el

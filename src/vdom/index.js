@@ -4,7 +4,7 @@ function vnode(vm,tag,key,props,children,text,type) { //该函数用于生成虚
         tag,
         key,
         props,
-        children,
+        children:children === undefined ? undefined : children.flat(Infinity),
         text,
         type
     }

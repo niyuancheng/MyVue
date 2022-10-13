@@ -524,6 +524,43 @@
 
   var textRegExp = /\{\{\s*(.+?)\}\}/g; //匹配mustache模板字符串
 
+  var vBindRegExp = /^v-bind|:([^\s]+)/;
+  var vOnRegEXp = /^v-on|@([^\s]+)/;
+
+  function include(attrs, directives) {
+    if (typeof directives === 'string') {
+      var _iterator = _createForOfIteratorHelper(attrs),
+          _step;
+
+      try {
+        for (_iterator.s(); !(_step = _iterator.n()).done;) {
+          var attr = _step.value;
+          if (attr.key === directives) return true;
+        }
+      } catch (err) {
+        _iterator.e(err);
+      } finally {
+        _iterator.f();
+      }
+    } else if (directives instanceof RegExp) {
+      var _iterator2 = _createForOfIteratorHelper(attrs),
+          _step2;
+
+      try {
+        for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+          var _attr = _step2.value;
+          if (directives.test(_attr.key)) return true;
+        }
+      } catch (err) {
+        _iterator2.e(err);
+      } finally {
+        _iterator2.f();
+      }
+    }
+
+    return false;
+  }
+
   function genText(text) {
     //用于生成mustache类型的模板字符串
     if (textRegExp.test(text)) {
@@ -567,31 +604,105 @@
   function genProps(attrs) {
     var res = "{";
     res += attrs.map(function (attr) {
-      if (attr.key !== "style" && attr.key !== "v-bind:style") {
-        //如果该属性值不为style的话
-        return "".concat(JSON.stringify(attr.key), ":").concat(JSON.stringify(attr.value));
-      } else {
-        var str = "";
-        str += "style:{";
-        str += attr.value.split(";").map(function (obj) {
-          var _obj$split = obj.split(":"),
-              _obj$split2 = _slicedToArray(_obj$split, 2),
-              key = _obj$split2[0],
-              value = _obj$split2[1];
+      if (vBindRegExp.test(attr.key)) {
+        var _res = attr.key.match(vBindRegExp);
 
-          return "".concat(key, ":").concat(JSON.stringify(value));
-        }).join(",");
-        str += "}";
-        return str;
+        var target = _res[1];
+        return "".concat(JSON.stringify(target), ":").concat(attr.value);
+      } else if (vOnRegEXp.test(attr.key)) {
+        var _res2 = attr.key.match(vOnRegEXp);
+
+        var _target = _res2[1];
+        var func = new Function("".concat(attr.value, ".call(this)"));
+        return "".concat(JSON.stringify(_target), ":").concat(func);
+      } else {
+        if (attr.key !== "style") {
+          //如果该属性值不为style的话
+          return "".concat(JSON.stringify(attr.key), ":").concat(JSON.stringify(attr.value));
+        } else {
+          var str = "";
+          str += "style:{";
+          str += attr.value.split(";").map(function (obj) {
+            var _obj$split = obj.split(":"),
+                _obj$split2 = _slicedToArray(_obj$split, 2),
+                key = _obj$split2[0],
+                value = _obj$split2[1];
+
+            return "".concat(key, ":").concat(JSON.stringify(value));
+          }).join(",");
+          str += "}";
+          return str;
+        }
       }
     }).join(",");
     res += "}";
     return res;
   }
 
+  function genCommon(node) {
+    return "_c(".concat(JSON.stringify(node.tagName)).concat(node.attrs.length === 0 ? ",undefined" : "," + genProps(node.attrs)).concat(node.children.length > 0 ? "," + genChildren(node.children) : "", ")");
+  }
+
+  function genVFor(node) {
+    var vFor = null;
+    var pos = 0;
+
+    for (var index in node.attrs) {
+      var attr = node.attrs[index];
+
+      if (attr.key === "v-for") {
+        vFor = attr.value;
+        pos = index;
+        break;
+      }
+    }
+
+    var _vFor$split = vFor.split(/\s+in\s+/),
+        _vFor$split2 = _slicedToArray(_vFor$split, 2),
+        key = _vFor$split2[0],
+        value = _vFor$split2[1];
+
+    node.attrs.splice(pos, 1);
+
+    if (/\(.+\)/.test(key)) {
+      var res = key.match(/\(\s*([^\s]+)\s*,\s*([^\s]+)\s*\)/);
+      var index = res[1],
+          item = res[2];
+      return "_l(".concat(value, ",function(").concat(index, ",").concat(item, "){\n            return ").concat(genCode(node), "\n        })");
+    } else {
+      return "_l(".concat(value, ",function(").concat(key, "){\n            return ").concat(genCode(node), "\n        })");
+    }
+  }
+
+  function genVIf(node) {
+    var vIf = null,
+        pos = 0;
+
+    for (var index in node.attrs) {
+      var attr = node.attrs[index];
+
+      if (attr.key === 'v-if') {
+        vIf = attr.value;
+        pos = index;
+        break;
+      }
+    }
+
+    node.attrs.splice(pos, 1);
+    return "".concat(vIf, " ? ").concat(genCode(node), " : _c()");
+  }
+
   function genCode(node) {
     //根据AST语法树拼接JS字符串
-    return "_c(".concat(JSON.stringify(node.tagName)).concat(node.attrs.length === 0 ? ",undefined" : "," + genProps(node.attrs)).concat(node.children.length > 0 ? "," + genChildren(node.children) : "", ")");
+    if (include(node.attrs, "v-for")) {
+      return genVFor(node);
+    }
+
+    if (include(node.attrs, "v-if")) {
+      return genVIf(node);
+    }
+
+    return genCommon(node);
   }
 
   var cname = "[a-zA-Z_][\\-\\.a-zA-Z0-9_]*"; //标签可能出现的所有标签名
@@ -699,7 +810,8 @@
 
   function compileToFunction(html) {
     //1.生成AST抽象语法树
-    var ast = parseHTML(html); //2.根据抽象语法树生成JS字符串
+    var ast = parseHTML(html);
+    console.log(ast); //2.根据抽象语法树生成JS字符串
 
     var code = genCode(ast.children[0]);
     var render = new Function("with(this){return ".concat(code, "}")); //通过new Function这种形式形成最终的render函数
@@ -903,77 +1015,6 @@
     return ['div', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'nav', 'section', 'header', 'footer', 'a', 'p', 'i', 'input', 'button', 'ul', 'ol', 'li', 'table'].includes(tag);
   }
 
-  //该模块用于解析虚拟DOM中的指令
-  var directives = /(^v-.+)|(^@.+)|(^:.+)/g; //用于匹配属性的正则表达式
-
-  function isDirective(key) {
-    //判断对应的键是否为指令
-    return directives.test(key);
-  }
-
-  function genFunc(code) {
-    return new Function("with(this){return ".concat(code, "}"));
-  }
-
-  function parseDirectives(key, vnode) {
-    directives.lastIndex = 0;
-
-    if (isDirective(key)) {
-      if (/^v-([^:]+)(.*)/.test(key)) {
-        var res = key.match(/^v-([^:]+):?(.*)/);
-        var direc = res[1],
-            target = res[2];
-
-        switch (direc) {
-          case "bind":
-            vnode.props[target] = genFunc(vnode.props[key]).call(vnode.vm);
-            break;
-
-          case "on":
-            var funcName = vnode.props[key]; //保存指令中的函数名
-
-            vnode.props[target] = function () {
-              console.log(funcName);
-              vnode.vm[funcName].call(vnode.vm);
-            };
-
-            break;
-        }
-      } else if (/^@(.+)/.test(key)) {
-        var _res = key.match(/^@(.+)/);
-
-        var _target = _res[1];
-        var _funcName = vnode.props[key];
-        console.log(_target);
-
-        vnode.props[_target] = function () {
-          vnode.vm[_funcName].call(vnode.vm);
-        };
-      } else if (/^:(.+)/.test(key)) {
-        var _res2 = key.match(/^:(.+)/);
-
-        var _target2 = _res2[1];
-        vnode.props[_target2] = genFunc(vnode.props[key]).call(vnode.vm);
-      }
-
-      delete vnode.props[key];
-    }
-  }
-
-  function parseProps(vnode) {
-    var props = vnode.props || [];
-
-    for (var key in props) {
-      parseDirectives(key, vnode);
-    }
-
-    if (vnode.children) {
-      vnode.children.forEach(function (child) {
-        parseProps(child);
-      });
-    }
-  }
-
   function vnode(vm, tag, key, props, children, text, type) {
     //该函数用于生成虚拟dom节点
     return {
@@ -981,7 +1022,7 @@
       tag: tag,
       key: key,
       props: props,
-      children: children,
+      children: children === undefined ? undefined : children.flat(Infinity),
       text: text,
       type: type
     };
@@ -1186,8 +1227,6 @@
           vnode.el.style[item] = vnode.props.style[item];
         }
       } else {
-        console.log(vnode.props[key]);
-
         if (typeof vnode.props[key] !== 'function') {
           vnode.el.setAttribute(key, vnode.props[key]);
         } else {
@@ -1210,13 +1249,14 @@
           });
         }
       } else if (vnode.type === 'component') {
+        console.log(vm);
         var com = new vm.$options.components[vnode.tag](); //获得组件节点的实例对象
 
         com.$mount();
         return com._vnode.el;
       }
     } else {
-      vnode.el = document.createTextNode(vnode.text);
+      vnode.el = document.createTextNode(vnode.text || "");
     }
 
     return vnode.el;
@@ -1232,23 +1272,23 @@
       createElement$1(newVNode, vm);
       callHooks(vm, "mounted");
       vm._vnode = newVNode;
-    }
-
-    if (oldVNode.nodeType === 1) {
-      //如果是真实的DOM元素的话则进行初次渲染
-      callHooks(vm, "beforeMount");
-
-      var _dom = createElement$1(newVNode, vm);
-
-      oldVNode.parentNode.insertBefore(_dom, oldVNode.nextSibling);
-      oldVNode.parentNode.removeChild(oldVNode);
-      callHooks(vm, "mounted");
     } else {
-      //如果不是则需要进入diff算法环节比较新旧虚拟节点的差异
-      callHooks(vm, "beforeUpdate");
-      patchVNode(oldVNode, newVNode);
-      newVNode.el = oldVNode.el;
-      callHooks(vm, "updated");
+      if (oldVNode.nodeType === 1) {
+        //如果是真实的DOM元素的话则进行初次渲染
+        callHooks(vm, "beforeMount");
+
+        var _dom = createElement$1(newVNode, vm);
+
+        oldVNode.parentNode.insertBefore(_dom, oldVNode.nextSibling);
+        oldVNode.parentNode.removeChild(oldVNode);
+        callHooks(vm, "mounted");
+      } else {
+        //如果不是则需要进入diff算法环节比较新旧虚拟节点的差异
+        callHooks(vm, "beforeUpdate");
+        patchVNode(oldVNode, newVNode);
+        newVNode.el = oldVNode.el;
+        callHooks(vm, "updated");
+      }
     } //根据diff算法更新旧的真实DOM节点
 
 
@@ -1279,6 +1319,22 @@
       return createTextVNode(this, text);
     };
 
+    Vue.prototype._l = function (arr, cb) {
+      var res = [];
+
+      if (cb.length === 1) {
+        for (var index = 0; index < arr.length; index++) {
+          res.push(cb.call(this, index));
+        }
+      } else if (cb.length === 2) {
+        for (var _index = 0; _index < arr.length; _index++) {
+          res.push(cb.call(this, _index, arr[_index]));
+        }
+      }
+
+      return res;
+    };
+
     Vue.prototype._render = function () {
       //调用vm实例上的render函数创建对应的虚拟DOM
       var vm = this;
@@ -1292,7 +1348,6 @@
       var vdom = vm._render(); //调用render函数生成虚拟节点
 
 
-      parseProps(vdom);
       console.log(vdom);
       patch(el, vdom, vm);
     };
